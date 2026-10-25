@@ -48,7 +48,6 @@ app.post("/posts", upload.single("thumbnail"),async(req, res) => {
     const post = await Post.create({ ...req.body, thumbnail:thumbnailUrl });
     res.status(201).json(post);
   }catch (err) {
-    console.log("UPLOAD ERROR: ",err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -87,5 +86,5 @@ app.delete("/posts/:id", async (req, res) => {
 });
 
 app.listen(process.env.PORT || 5000, () =>
-  console.log("Server is running")
+  console.log("Server running")
 );
