@@ -87,5 +87,5 @@ app.delete("/posts/:id", async (req, res) => {
 });
 
 app.listen(process.env.PORT || 5000, () =>
-  console.log("Server running")
+  console.log("Server is running")
 );
