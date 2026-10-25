@@ -1,10 +1,14 @@
+const cors = require('cors');
 require("dotenv").config();
+const upload = require("./middleware/upload");
+const cloudinary = require("./config/cloudinary");
 const express = require("express");
 const mongoose = require("mongoose");
 const Post = require("./models/Post");
 const User = require("./models/User");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 mongoose
@@ -25,11 +29,26 @@ app.post("/users",async(req,res) => {
 });
 
 // POST /posts - naya post banao
-app.post("/posts", async (req, res) => {
+
+app.post("/posts", upload.single("thumbnail"),async(req, res) => {
   try {
-    const post = await Post.create(req.body);
+    let thumbnailUrl;
+    if(req.file){
+      thumbnailUrl = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {},
+          (error, result) => {
+            if(error) reject(error);
+            else resolve(result.secure_url);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+    }
+    const post = await Post.create({ ...req.body, thumbnail:thumbnailUrl });
     res.status(201).json(post);
-  } catch (err) {
+  }catch (err) {
+    console.log("UPLOAD ERROR: ",err);
     res.status(400).json({ error: err.message });
   }
 });
