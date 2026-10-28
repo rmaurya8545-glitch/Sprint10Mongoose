@@ -1,5 +1,7 @@
 const cors = require('cors');
 require("dotenv").config();
+const http = require("http");
+const { Server } = require("socket.io");
 const upload = require("./middleware/upload");
 const cloudinary = require("./config/cloudinary");
 const express = require("express");
@@ -85,6 +87,45 @@ app.delete("/posts/:id", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 5000, () =>
-  console.log("Server running")
-);
+const httpServer = http.createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "https://cine-stream-alpha-ten.vercel.app",
+    ],
+    methods: ["GET", "POST"],
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+
+  socket.on("join room", (room) => {
+    for (const r of socket.rooms) {
+      if (r !== socket.id) socket.leave(r);
+    }
+    socket.join(room);
+    console.log(socket.id, "joined", room);
+  });
+
+  socket.on("chat message", (msg) => {
+    io.to(msg.room).emit("chat message", msg);
+  });
+
+  socket.on("typing", ({ user, room }) => {
+    socket.to(room).emit("typing", user);
+  });
+
+  socket.on("stop typing", (room) => {
+    socket.to(room).emit("stop typing");
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
+  });
+});
+httpServer.listen(process.env.PORT || 5000, ()=>{
+  console.log("Server running");
+});
